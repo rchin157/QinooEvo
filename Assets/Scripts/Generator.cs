@@ -10,8 +10,6 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private int cols = 8;
     [SerializeField]
-    private float tileSize = 1;
-    [SerializeField]
     private Camera cam;
 
     [SerializeField]
