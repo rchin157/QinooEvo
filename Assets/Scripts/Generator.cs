@@ -21,10 +21,22 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private int mapOffsetZ = 0;
 
+    [Header("Entity Densities")]
     [Range(0f, 2f)]
     public float treeDensity = 1f;
     [Range(0f, 10f)]
     public float bushDensity = 1f;
+
+    [Header("Terrain Noise Distribution")]
+    [Range(0f, 1f)]
+    public float deepWaterCutoff = 0.25f;
+    [Range(0f, 1f)]
+    public float waterCutoff = 0.42f;
+    [Range(0f, 1f)]
+    public float groundCutoff = 0.75f;
+    [Range(0f, 1f)]
+    public float mountainCutoff = 1f;
+
 
     Dictionary<int, GameObject> tileset;
     Dictionary<int, GameObject> tileGroups;
@@ -40,7 +52,6 @@ public class Generator : MonoBehaviour
     public GameObject pfbWall;
     public GameObject pfbTree;
     public GameObject pfbBush;
-
 
     List<List<int>> noiseGrid = new List<List<int>>();
     List<List<GameObject>> tileGrid = new List<List<GameObject>>();
@@ -199,19 +210,24 @@ public class Generator : MonoBehaviour
     {
         float upperBound = tileset.Count * 2;
         float scaledPerlin = GetScaledPerlin(x, z, upperBound, 0f);
-        if (scaledPerlin < 0.25 * upperBound)
+        if (scaledPerlin < deepWaterCutoff * upperBound)
         {
-            return 0; // ravine
-        } else if (scaledPerlin < 0.42 * upperBound)
+            return 0; // deep water
+        }
+        else if (scaledPerlin < waterCutoff * upperBound)
         {
             return 1; // water
-        } else if (scaledPerlin < 0.75 * upperBound)
+        }
+        else if (scaledPerlin < groundCutoff * upperBound)
         {
             return 2; // ground
-        } else
+        }
+        else if (scaledPerlin < mountainCutoff * upperBound)
         {
             return 3; // mountain
         }
+        else
+            return 2;
     }
 
     private float GetScaledPerlin(int x, int z, float upperBound, float noiseOffset)

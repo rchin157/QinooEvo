@@ -152,8 +152,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a3caa797c78a4e4cb579cdb7b99c63d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rows: 20
-  cols: 200
+  rows: 12
+  cols: 100
   cam: {fileID: 2030546160}
   magnificationX: 7
   magnificationZ: 5
@@ -161,6 +161,10 @@ MonoBehaviour:
   mapOffsetZ: 0
   treeDensity: 0.75
   bushDensity: 1
+  deepWaterCutoff: 0.25
+  waterCutoff: 0.42
+  groundCutoff: 0.75
+  mountainCutoff: 1
   pfbRavine: {fileID: 8021766818991015923, guid: 819b2b3501b56da4d9a5dfa394890cf3, type: 3}
   pfbWater: {fileID: 2617995501533211968, guid: a53516b4ca38c1d45b397efc20793a9b, type: 3}
   pfbGround: {fileID: 6457176223550410541, guid: 72b31abb6a36d0845ae7959932921d1f, type: 3}
