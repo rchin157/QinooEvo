@@ -160,12 +160,14 @@ MonoBehaviour:
   mapOffsetX: 0
   mapOffsetZ: 0
   treeDensity: 0.75
+  bushDensity: 1
   pfbRavine: {fileID: 8021766818991015923, guid: 819b2b3501b56da4d9a5dfa394890cf3, type: 3}
   pfbWater: {fileID: 2617995501533211968, guid: a53516b4ca38c1d45b397efc20793a9b, type: 3}
   pfbGround: {fileID: 6457176223550410541, guid: 72b31abb6a36d0845ae7959932921d1f, type: 3}
   pfbMountain: {fileID: 3916790481478249667, guid: 14c10c8ff2ee95c4d833570bca2fd309, type: 3}
   pfbWall: {fileID: 6942973241111202559, guid: 6d1aea9ccc037dd499295058a5a6f609, type: 3}
   pfbTree: {fileID: 6476333068070942947, guid: 8693a05cef3d596448c993e0892a0421, type: 3}
+  pfbBush: {fileID: 2084119183913805829, guid: a6c23337d2306ed4e94dd591630c5c29, type: 3}
 --- !u!4 &839471942
 Transform:
   m_ObjectHideFlags: 0

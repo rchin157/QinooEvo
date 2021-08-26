@@ -23,6 +23,8 @@ public class Generator : MonoBehaviour
 
     [Range(0f, 2f)]
     public float treeDensity = 1f;
+    [Range(0f, 10f)]
+    public float bushDensity = 1f;
 
     Dictionary<int, GameObject> tileset;
     Dictionary<int, GameObject> tileGroups;
@@ -37,9 +39,14 @@ public class Generator : MonoBehaviour
     public GameObject pfbMountain;
     public GameObject pfbWall;
     public GameObject pfbTree;
+    public GameObject pfbBush;
+
 
     List<List<int>> noiseGrid = new List<List<int>>();
     List<List<GameObject>> tileGrid = new List<List<GameObject>>();
+
+    List<List<int>> entityGrid = new List<List<int>>();
+    Dictionary<int, float[,]> entityNoiseGrids;
 
     float randNoiseStart;
 
@@ -49,16 +56,35 @@ public class Generator : MonoBehaviour
     void Start()
     {
         randNoiseStart = UnityEngine.Random.Range(0f, 10000f);
+        SetupScene();
+        GenerateTerrain();
+        GenerateEntities();
+        positionCamera();
+    }
+
+    private void SetupScene()
+    {
         CreateTileset();
         CreateTileGroups();
         CreateEntityDict();
         CreateEntityGroups();
+    }
+
+    private void GenerateTerrain()
+    {
+        InitTerrainGrid();
         GenerateStart();
         GenerateMap();
         GenerateEnd();
-        GenerateTrees();
         CreateWalls();
-        positionCamera();
+    }
+
+    private void GenerateEntities()
+    {
+        InitEntityNoiseGrids();
+        InitEntityGrid();
+        GenerateTrees();
+        GenerateBushes();
     }
 
     private void CreateTileset()
@@ -74,6 +100,7 @@ public class Generator : MonoBehaviour
     {
         entityset = new Dictionary<int, GameObject>();
         entityset.Add(0, pfbTree);
+        entityset.Add(1, pfbBush);
     }
 
     private void CreateTileGroups()
@@ -111,12 +138,54 @@ public class Generator : MonoBehaviour
         camCont.alignCameraToLevel(rows);
     }
 
-    private void GenerateMap()
+    private void InitTerrainGrid()
     {
         for (int row = 0; row < rows; row++)
         {
             noiseGrid.Add(new List<int>());
             tileGrid.Add(new List<GameObject>());
+        }
+    }
+
+    private void InitEntityGrid()
+    {
+        for (int row = 0; row < rows; row++)
+        {
+            entityGrid.Add(new List<int>());
+            for (int col = 0; col < cols + 2 * levelCapLength; col++)
+            {
+                if (col < 2 * levelCapLength / 3 || col > cols + levelCapLength + levelCapLength / 3)
+                    entityGrid[row].Add(-2);    // invalid
+                else
+                    entityGrid[row].Add(-1);    // free
+            }
+        }
+    }
+
+    private void InitEntityNoiseGrids()
+    {
+        int offsetCount = 1;
+        entityNoiseGrids = new Dictionary<int, float[,]>();
+        foreach (KeyValuePair<int, GameObject> prefabPair in entityset)
+        {
+            if (prefabPair.Key == 0)
+                continue;   // skip trees
+            entityNoiseGrids.Add(prefabPair.Key, new float[rows, cols + 2 * levelCapLength]);
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols + 2 * levelCapLength; j++)
+                {
+                    entityNoiseGrids[prefabPair.Key][i, j] = GetScaledPerlin(i, j, 10f, offsetCount * 100);
+                }
+            }
+            offsetCount++;
+        }
+    }
+
+    private void GenerateMap()
+    {
+        for (int row = 0; row < rows; row++)
+        {
             for (int col = levelCapLength; col < cols + levelCapLength; col++)
             {
                 int tileId = GetPerlinId(row, col);
@@ -129,7 +198,7 @@ public class Generator : MonoBehaviour
     private int GetPerlinId(int x, int z)
     {
         float upperBound = tileset.Count * 2;
-        float scaledPerlin = GetScaledPerlin(x, z, upperBound);
+        float scaledPerlin = GetScaledPerlin(x, z, upperBound, 0f);
         if (scaledPerlin < 0.25 * upperBound)
         {
             return 0; // ravine
@@ -145,11 +214,11 @@ public class Generator : MonoBehaviour
         }
     }
 
-    private float GetScaledPerlin(int x, int z, float upperBound)
+    private float GetScaledPerlin(int x, int z, float upperBound, float noiseOffset)
     {
         float rawPerlin = Mathf.PerlinNoise(
-            (x - mapOffsetX) / magnificationX + randNoiseStart,
-            (z - mapOffsetZ) / magnificationZ + randNoiseStart
+            (x - mapOffsetX) / magnificationX + randNoiseStart + noiseOffset,
+            (z - mapOffsetZ) / magnificationZ + randNoiseStart + noiseOffset
         );
 
         float clampedPerlin = Mathf.Clamp(rawPerlin, 0f, 1f);
@@ -185,8 +254,6 @@ public class Generator : MonoBehaviour
         // reminder: add boat or something
         for (int row = 0; row < rows; row++)
         {
-            noiseGrid.Add(new List<int>());
-            tileGrid.Add(new List<GameObject>());
             for (int col = 0; col < levelCapLength; col++)
             {
                 if (col < levelCapLength / 3)
@@ -206,8 +273,6 @@ public class Generator : MonoBehaviour
     {
         for (int row = 0; row < rows; row++)
         {
-            noiseGrid.Add(new List<int>());
-            tileGrid.Add(new List<GameObject>());
             for (int col = cols + levelCapLength; col < cols + levelCapLength * 2; col++)
             {
                 if (col < cols + levelCapLength + 2 * levelCapLength / 3)
@@ -232,9 +297,27 @@ public class Generator : MonoBehaviour
         {
             foreach (int val in noiserow)
             {
-                if (col > 2 * levelCapLength / 3 && val == 2 && GetScaledPerlin(row, col, 2f) >= 2f - treeDensity)
+                if (entityGrid[row][col] == -1 && val == 2 && GetScaledPerlin(row, col, 2f, 0f) >= 2f - treeDensity)
                 {
                     CreateEntity(0, row, col);
+                }
+                col++;
+            }
+            row++;
+            col = 0;
+        }
+    }
+
+    private void GenerateBushes()
+    {
+        int row = 0, col = 0;
+        foreach (List<int> noiserow in noiseGrid)
+        {
+            foreach (int val in noiserow)
+            {
+                if (entityGrid[row][col] == -1 && val == 2 && entityNoiseGrids[1][row, col] >= 10f - bushDensity)
+                {
+                    CreateEntity(1, row, col);
                 }
                 col++;
             }
@@ -256,8 +339,11 @@ public class Generator : MonoBehaviour
 
         entity.transform.position = entityId switch
         {
+            1 => new Vector3(posX, 0.5f, posZ),
             _ => new Vector3(posX, 1.2f, posZ)
         };
+
+        entityGrid[row][col] = entityId;
     }
 
     private void CreateWalls()
